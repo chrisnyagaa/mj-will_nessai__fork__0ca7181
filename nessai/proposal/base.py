@@ -5,6 +5,7 @@ Base object for all proposal classes.
 
 import datetime
 import logging
+import os
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -33,6 +34,7 @@ class Proposal(ABC):
         self.samples = []
         self.indices = []
         self._checked_population = True
+        self.output = None
 
     @property
     def initialised(self):
@@ -84,6 +86,26 @@ class Proposal(ABC):
         Resume the proposal with the model
         """
         self.model = model
+
+    def update_output_directory(self, output):
+        """
+        Update the output directory for saving results.
+
+        Parameters
+        ----------
+        output : str
+            Path to the new output directory. If None, uses the current 
+            working directory. The directory will be created if it doesn't exist.
+        """
+        if output is None:
+            output = os.getcwd()
+        
+        if not os.path.exists(output):
+            os.makedirs(output, exist_ok=True)
+            logger.debug(f"Created output directory: {output}")
+        
+        self.output = output
+        logger.debug(f"Updated output directory to: {output}")
 
     def __getstate__(self):
         state = self.__dict__.copy()
