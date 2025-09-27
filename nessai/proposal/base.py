@@ -5,6 +5,7 @@ Base object for all proposal classes.
 
 import datetime
 import logging
+import os
 from abc import ABC, abstractmethod
 
 import numpy as np
@@ -84,6 +85,33 @@ class Proposal(ABC):
         Resume the proposal with the model
         """
         self.model = model
+
+    def update_output_directory(self, output_directory):
+        """
+        Update the output directory for the proposal.
+        
+        This method allows changing the output directory after the proposal
+        has been initialized. This is useful when the sampler needs to 
+        change its output location.
+        
+        Parameters
+        ----------
+        output_directory : str
+            The new output directory path. If None, uses the current 
+            working directory.
+        """
+        if output_directory is None:
+            output_directory = os.getcwd()
+        
+        # Store the output directory if the proposal uses it
+        if hasattr(self, 'output'):
+            self.output = output_directory
+            logger.debug(f"Updated output directory to: {output_directory}")
+        else:
+            # For proposals that don't have an output attribute by default,
+            # we add it so subclasses can use it if needed
+            self.output = output_directory
+            logger.debug(f"Set output directory to: {output_directory}")
 
     def __getstate__(self):
         state = self.__dict__.copy()
