@@ -4,8 +4,9 @@ Test the base proposal class.
 """
 
 import logging
+import os
 import pickle
-from unittest.mock import MagicMock, Mock, create_autospec
+from unittest.mock import MagicMock, Mock, create_autospec, patch
 
 import numpy as np
 import pytest
@@ -96,6 +97,39 @@ def test_resume(proposal):
     assert proposal.model is model
 
 
+def test_update_output_directory(proposal):
+    """Test the update_output_directory method with a specific directory."""
+    test_dir = "/test/output/dir"
+    Proposal.update_output_directory(proposal, test_dir)
+    assert proposal.output == test_dir
+
+
+def test_update_output_directory_none(proposal):
+    """Test the update_output_directory method with None (should use cwd)."""
+    with patch('os.getcwd', return_value='/current/working/dir'):
+        Proposal.update_output_directory(proposal, None)
+        assert proposal.output == '/current/working/dir'
+
+
+def test_update_output_directory_existing_attribute(proposal):
+    """Test updating when output attribute already exists."""
+    proposal.output = "/old/dir"
+    test_dir = "/new/dir"
+    Proposal.update_output_directory(proposal, test_dir)
+    assert proposal.output == test_dir
+
+
+def test_update_output_directory_no_existing_attribute(proposal):
+    """Test updating when output attribute doesn't exist."""
+    # Make sure output attribute doesn't exist
+    if hasattr(proposal, 'output'):
+        delattr(proposal, 'output')
+    
+    test_dir = "/test/dir"
+    Proposal.update_output_directory(proposal, test_dir)
+    assert proposal.output == test_dir
+
+
 def test_getstate(proposal):
     """Test the get state method called by pickle."""
     proposal.model = Mock()
@@ -110,3 +144,19 @@ def test_pickling(model):
     d = pickle.dumps(proposal)
     out = pickle.loads(d)
     assert hasattr(out, "model") is False
+
+
+@pytest.mark.integration_test
+def test_update_output_directory_integration(model, tmpdir):
+    """Test update_output_directory with a real DummyProposal instance."""
+    proposal = DummyProposal(model)
+    
+    # Test setting a specific directory
+    test_dir = str(tmpdir.mkdir("test_output"))
+    proposal.update_output_directory(test_dir)
+    assert proposal.output == test_dir
+    
+    # Test with None (should use cwd)
+    with patch('os.getcwd', return_value='/mock/cwd'):
+        proposal.update_output_directory(None)
+        assert proposal.output == '/mock/cwd'
